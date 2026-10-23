@@ -1,0 +1,210 @@
+
+-- EGG TEST GUI
+-- LocalScript for your own Roblox game
+-- Place in StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- These RemoteEvents must exist in ReplicatedStorage.
+local autoEggEvent = ReplicatedStorage:WaitForChild("RequestAutoEgg")
+local autoPlaceEvent = ReplicatedStorage:WaitForChild("RequestAutoPlaceEgg")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "EggTestGUI"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 260, 0, 250)
+frame.Position = UDim2.new(0, 18, 0.32, 0)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 48)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(120, 90, 255)
+stroke.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -48, 0, 42)
+title.Position = UDim2.new(0, 12, 0, 4)
+title.BackgroundTransparency = 1
+title.Text = "EGG TEST PANEL"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -36, 0, 8)
+close.BackgroundColor3 = Color3.fromRGB(190, 55, 65)
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.TextSize = 20
+close.Parent = frame
+
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 8)
+
+close.Activated:Connect(function()
+    gui:Destroy()
+end)
+
+local function makeButton(name, label, y, color)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = UDim2.new(1, -24, 0, 42)
+    button.Position = UDim2.new(0, 12, 0, y)
+    button.BackgroundColor3 = color
+    button.Text = label
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.TextSize = 15
+    button.Font = Enum.Font.GothamSemibold
+    button.Parent = frame
+
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
+    return button
+end
+
+local eggButton = makeButton(
+    "AutoEggButton",
+    "AUTO EGG: OFF",
+    52,
+    Color3.fromRGB(65, 105, 170)
+)
+
+local placeButton = makeButton(
+    "AutoPlaceButton",
+    "AUTO PLACE: OFF",
+    100,
+    Color3.fromRGB(65, 145, 95)
+)
+
+local colorButton = makeButton(
+    "ChangeColorButton",
+    "CHANGE FRAME COLOR",
+    148,
+    Color3.fromRGB(100, 75, 165)
+)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -24, 0, 32)
+status.Position = UDim2.new(0, 12, 0, 198)
+status.BackgroundTransparency = 1
+status.Text = "Status: Ready"
+status.TextColor3 = Color3.fromRGB(220, 220, 230)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.TextWrapped = true
+status.Parent = frame
+
+local autoEgg = false
+local autoPlace = false
+
+eggButton.Activated:Connect(function()
+    autoEgg = not autoEgg
+
+    eggButton.Text = autoEgg
+        and "AUTO EGG: ON"
+        or "AUTO EGG: OFF"
+
+    eggButton.BackgroundColor3 = autoEgg
+        and Color3.fromRGB(35, 155, 90)
+        or Color3.fromRGB(65, 105, 170)
+
+    autoEggEvent:FireServer(autoEgg)
+
+    status.Text = autoEgg
+        and "Status: Auto Egg requested"
+        or "Status: Auto Egg stopped"
+end)
+
+placeButton.Activated:Connect(function()
+    autoPlace = not autoPlace
+
+    placeButton.Text = autoPlace
+        and "AUTO PLACE: ON"
+        or "AUTO PLACE: OFF"
+
+    placeButton.BackgroundColor3 = autoPlace
+        and Color3.fromRGB(35, 155, 90)
+        or Color3.fromRGB(65, 145, 95)
+
+    autoPlaceEvent:FireServer(autoPlace)
+
+    status.Text = autoPlace
+        and "Status: Auto Place requested"
+        or "Status: Auto Place stopped"
+end)
+
+local colors = {
+    Color3.fromRGB(35, 35, 48),
+    Color3.fromRGB(35, 65, 95),
+    Color3.fromRGB(70, 40, 90),
+    Color3.fromRGB(35, 85, 65),
+    Color3.fromRGB(95, 55, 35)
+}
+
+local colorIndex = 1
+
+colorButton.Activated:Connect(function()
+    colorIndex = (colorIndex % #colors) + 1
+
+    frame.BackgroundColor3 = colors[colorIndex]
+    stroke.Color = colors[colorIndex]
+
+    status.Text = "Status: Frame color changed"
+end)
+
+-- Drag panel using the title bar on touch or mouse.
+local dragging = false
+local dragStart
+local startPosition
+local dragInput
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        dragging = true
+        dragStart = input.Position
+        startPosition = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        local delta = input.Position - dragStart
+
+        frame.Position = UDim2.new(
+            startPosition.X.Scale,
+            startPosition.X.Offset + delta.X,
+            startPosition.Y.Scale,
+            startPosition.Y.Offset + delta.Y
+        )
+    end
+end)
